@@ -85,6 +85,34 @@ cleanup_pip_cache() {
     fi
 }
 
+# 清理 uv 缓存
+cleanup_uv_cache() {
+    local uv_cmd="uv"
+    if ! command_exists uv; then
+        if [[ -f "$HOME/.cargo/bin/uv" ]]; then
+            uv_cmd="$HOME/.cargo/bin/uv"
+        else
+            print_info "uv 未安装，跳过"
+            return 0
+        fi
+    fi
+    
+    print_info "清理 uv 缓存..."
+    local cache_dir="$HOME/.cache/uv"
+    local size=$(get_dir_size "$cache_dir" 2>/dev/null || echo "unknown")
+    
+    print_info "uv 缓存目录: $cache_dir ($size)"
+    
+    if confirm "是否清理 uv 缓存？"; then
+        if [[ -d "$cache_dir" ]]; then
+            run_command "rm -rf $cache_dir" "清理 uv 缓存"
+            log_cleanup "packages" "uv 缓存"
+        else
+            print_info "uv 缓存目录不存在，无需清理"
+        fi
+    fi
+}
+
 # 清理 conda 缓存
 cleanup_conda_cache() {
     if command_exists conda; then
@@ -154,6 +182,7 @@ main() {
     cleanup_yarn_cache
     cleanup_pnpm_cache
     cleanup_pip_cache
+    cleanup_uv_cache
     cleanup_conda_cache
     cleanup_brew_cache
     cleanup_apt_cache

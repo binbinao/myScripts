@@ -102,11 +102,13 @@ myScripts/
 
 ### Python 及相关工具
 
-安装 Python3、pip、conda：
+安装 Python3、pip、uv、conda：
 
 ```bash
 ./install/install-python.sh
 ```
+
+**注意**: uv 是一个快速的 Python 包管理器，推荐用于现代 Python 项目。
 
 ### Docker 及 Docker Compose
 
@@ -156,7 +158,7 @@ myScripts/
 
 ### 包管理器缓存清理
 
-清理 npm、yarn、pnpm、pip、conda、brew、apt 等缓存：
+清理 npm、yarn、pnpm、pip、uv、conda、brew、apt 等缓存：
 
 ```bash
 ./cleanup/cleanup-packages.sh

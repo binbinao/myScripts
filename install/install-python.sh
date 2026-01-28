@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Python 及相关工具安装脚本
-# 支持安装 Python、pip、conda
+# 支持安装 Python、pip、conda、uv
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -61,6 +61,63 @@ check_pip() {
             print_error "需要先安装 Python3"
             return 1
         fi
+    fi
+}
+
+# 安装 uv
+install_uv() {
+    if check_version "uv" "uv --version"; then
+        print_info "uv 已安装，跳过"
+        return 0
+    fi
+    
+    print_info "开始安装 uv..."
+    
+    # uv 官方推荐使用官方安装脚本
+    if command_exists curl; then
+        print_info "使用官方安装脚本安装 uv..."
+        run_command "curl -LsSf https://astral.sh/uv/install.sh | sh" "安装 uv"
+        
+        # 添加到 PATH（安装脚本通常会自动添加到 shell 配置文件中）
+        # 但为了确保当前会话可用，我们手动添加到 PATH
+        local uv_bin="$HOME/.cargo/bin"
+        if [[ -d "$uv_bin" ]]; then
+            export PATH="$uv_bin:$PATH"
+        fi
+        
+        # 检查是否在 .zshrc 或 .bashrc 中
+        if [[ -f "$HOME/.zshrc" ]] && ! grep -q "\.cargo/bin" "$HOME/.zshrc"; then
+            echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> "$HOME/.zshrc"
+        fi
+        if [[ -f "$HOME/.bashrc" ]] && ! grep -q "\.cargo/bin" "$HOME/.bashrc"; then
+            echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> "$HOME/.bashrc"
+        fi
+    elif command_exists pip3 || command_exists pip; then
+        local pip_cmd="pip3"
+        command_exists pip3 || pip_cmd="pip"
+        print_info "使用 pip 安装 uv..."
+        run_command "$pip_cmd install uv" "安装 uv"
+    else
+        print_error "需要 curl 或 pip 来安装 uv"
+        return 1
+    fi
+    
+    # 验证安装
+    if command_exists uv || ([[ -f "$HOME/.cargo/bin/uv" ]] && "$HOME/.cargo/bin/uv" --version &>/dev/null); then
+        local uv_cmd="uv"
+        if ! command_exists uv; then
+            uv_cmd="$HOME/.cargo/bin/uv"
+        fi
+        local version=$($uv_cmd --version 2>/dev/null | head -n 1)
+        log_installation "uv" "$version"
+        print_success "uv 安装完成"
+        if ! command_exists uv; then
+            print_warning "请重新打开终端或运行: source ~/.zshrc (或 ~/.bashrc)"
+        fi
+        return 0
+    else
+        print_warning "uv 安装可能未完成，请手动验证"
+        return 1
     fi
 }
 
@@ -132,6 +189,7 @@ install_conda() {
 main() {
     install_python
     check_pip
+    install_uv
     install_conda
     
     echo ""
@@ -139,6 +197,11 @@ main() {
     echo "已安装工具版本："
     command_exists python3 && echo "  Python3: $(python3 --version)"
     command_exists pip3 && echo "  pip3: $(pip3 --version)"
+    if command_exists uv; then
+        echo "  uv: $(uv --version)"
+    elif [[ -f "$HOME/.cargo/bin/uv" ]]; then
+        echo "  uv: $($HOME/.cargo/bin/uv --version)"
+    fi
     command_exists conda && echo "  Conda: $(conda --version)"
 }
 
