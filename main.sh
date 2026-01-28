@@ -25,36 +25,37 @@ show_main_menu() {
     echo "  1) 安装 Node.js 及相关工具"
     echo "  2) 安装 Python 及相关工具"
     echo "  3) 安装 Docker 及 Docker Compose"
-    echo "  4) 安装 Git 及相关工具"
-    echo "  5) 安装数据库工具"
-    echo "  6) 一键安装所有工具"
+    echo "  4) 安装 Podman（Docker 替代方案）"
+    echo "  5) 安装 Git 及相关工具"
+    echo "  6) 安装数据库工具"
+    echo "  7) 一键安装所有工具"
     echo ""
     
     echo -e "${YELLOW}=== 清理工具 ===${NC}"
-    echo "  7) 清理系统缓存"
-    echo "  8) 清理包管理器缓存"
-    echo "  9) 清理 Docker 资源"
-    echo " 10) 清理 Git 仓库"
-    echo " 11) 清理临时文件"
-    echo " 12) 清理日志文件"
-    echo " 13) 清理 node_modules"
-    echo " 14) 清理 Python 缓存"
-    echo " 15) 一键清理所有（需确认）"
+    echo "  8) 清理系统缓存"
+    echo "  9) 清理包管理器缓存"
+    echo " 10) 清理 Docker 资源"
+    echo " 11) 清理 Git 仓库"
+    echo " 12) 清理临时文件"
+    echo " 13) 清理日志文件"
+    echo " 14) 清理 node_modules"
+    echo " 15) 清理 Python 缓存"
+    echo " 16) 一键清理所有（需确认）"
     echo ""
     
     echo -e "${CYAN}=== 问题排查 ===${NC}"
-    echo " 16) 网络问题排查"
-    echo " 17) 磁盘空间分析"
-    echo " 18) 进程管理"
-    echo " 19) 权限问题排查"
-    echo " 20) 服务状态检查"
-    echo " 21) 依赖冲突排查"
-    echo " 22) 性能分析"
+    echo " 17) 网络问题排查"
+    echo " 18) 磁盘空间分析"
+    echo " 19) 进程管理"
+    echo " 20) 权限问题排查"
+    echo " 21) 服务状态检查"
+    echo " 22) 依赖冲突排查"
+    echo " 23) 性能分析"
     echo ""
     
     echo -e "${MAGENTA}=== 其他功能 ===${NC}"
-    echo " 23) 查看操作日志"
-    echo " 24) 查看使用示例"
+    echo " 24) 查看操作日志"
+    echo " 25) 查看使用示例"
     echo "  0) 退出"
     echo ""
 }
@@ -122,7 +123,7 @@ view_examples() {
 main_loop() {
     while true; do
         show_main_menu
-        read -p "$(echo -e ${CYAN}请选择操作 [0-24]: ${NC})" choice
+        read -p "$(echo -e ${CYAN}请选择操作 [0-25]: ${NC})" choice
         
         case $choice in
             1)
@@ -138,85 +139,89 @@ main_loop() {
                 press_any_key
                 ;;
             4)
-                run_install_script "install-git.sh"
+                run_install_script "install-podman.sh"
                 press_any_key
                 ;;
             5)
-                run_install_script "install-db.sh"
+                run_install_script "install-git.sh"
                 press_any_key
                 ;;
             6)
-                run_install_script "install-all.sh"
+                run_install_script "install-db.sh"
                 press_any_key
                 ;;
             7)
-                run_cleanup_script "cleanup-system.sh"
+                run_install_script "install-all.sh"
                 press_any_key
                 ;;
             8)
-                run_cleanup_script "cleanup-packages.sh"
+                run_cleanup_script "cleanup-system.sh"
                 press_any_key
                 ;;
             9)
-                run_cleanup_script "cleanup-docker.sh"
+                run_cleanup_script "cleanup-packages.sh"
                 press_any_key
                 ;;
             10)
-                run_cleanup_script "cleanup-git.sh"
+                run_cleanup_script "cleanup-docker.sh"
                 press_any_key
                 ;;
             11)
-                run_cleanup_script "cleanup-temp.sh"
+                run_cleanup_script "cleanup-git.sh"
                 press_any_key
                 ;;
             12)
-                run_cleanup_script "cleanup-logs.sh"
+                run_cleanup_script "cleanup-temp.sh"
                 press_any_key
                 ;;
             13)
-                run_cleanup_script "cleanup-node.sh"
+                run_cleanup_script "cleanup-logs.sh"
                 press_any_key
                 ;;
             14)
-                run_cleanup_script "cleanup-python.sh"
+                run_cleanup_script "cleanup-node.sh"
                 press_any_key
                 ;;
             15)
-                run_cleanup_script "cleanup-all.sh"
+                run_cleanup_script "cleanup-python.sh"
                 press_any_key
                 ;;
             16)
-                run_troubleshoot_script "check-network.sh"
+                run_cleanup_script "cleanup-all.sh"
                 press_any_key
                 ;;
             17)
-                run_troubleshoot_script "check-disk.sh"
+                run_troubleshoot_script "check-network.sh"
                 press_any_key
                 ;;
             18)
-                run_troubleshoot_script "check-process.sh"
+                run_troubleshoot_script "check-disk.sh"
                 press_any_key
                 ;;
             19)
-                run_troubleshoot_script "check-permission.sh"
+                run_troubleshoot_script "check-process.sh"
                 press_any_key
                 ;;
             20)
-                run_troubleshoot_script "check-services.sh"
+                run_troubleshoot_script "check-permission.sh"
                 press_any_key
                 ;;
             21)
-                run_troubleshoot_script "check-dependencies.sh"
+                run_troubleshoot_script "check-services.sh"
                 press_any_key
                 ;;
             22)
-                run_troubleshoot_script "check-performance.sh"
+                run_troubleshoot_script "check-dependencies.sh"
                 press_any_key
                 ;;
             23)
-                view_logs
+                run_troubleshoot_script "check-performance.sh"
+                press_any_key
                 ;;
             24)
+                view_logs
+                ;;
+            25)
                 view_examples
                 ;;
             0)
@@ -242,6 +247,9 @@ if [[ $# -gt 0 ]]; then
             ;;
         install-docker|docker)
             run_install_script "install-docker.sh"
+            ;;
+        install-podman|podman)
+            run_install_script "install-podman.sh"
             ;;
         install-git|git)
             run_install_script "install-git.sh"
@@ -301,7 +309,7 @@ if [[ $# -gt 0 ]]; then
             echo "用法: $0 [命令]"
             echo ""
             echo "命令列表:"
-            echo "  安装: install-node, install-python, install-docker, install-git, install-db"
+            echo "  安装: install-node, install-python, install-docker, install-podman, install-git, install-db"
             echo "  清理: cleanup-system, cleanup-packages, cleanup-docker, cleanup-git, cleanup-temp, cleanup-logs, cleanup-node, cleanup-python"
             echo "  排查: check-network, check-disk, check-process, check-permission, check-services, check-dependencies, check-performance"
             echo "  其他: log, help"

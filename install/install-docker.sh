@@ -7,7 +7,39 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 source "$SCRIPT_DIR/../lib/common.sh"
 source "$SCRIPT_DIR/../lib/logger.sh"
 
-print_title "Docker 及 Docker Compose 安装"
+print_title "Docker/Podman 安装"
+
+# 选择安装 Docker 或 Podman
+choose_container_runtime() {
+    # 如果设置了环境变量，直接使用
+    if [[ -n "$CONTAINER_RUNTIME" ]]; then
+        if [[ "$CONTAINER_RUNTIME" == "podman" ]]; then
+            return 1  # Podman
+        else
+            return 0  # Docker
+        fi
+    fi
+    
+    echo ""
+    echo "请选择要安装的容器运行时："
+    echo "  1) Docker（传统选择，需要守护进程）"
+    echo "  2) Podman（无守护进程，Docker 的替代方案）"
+    echo ""
+    read -p "$(echo -e ${CYAN}请选择 [1-2]: ${NC})" choice
+    
+    case $choice in
+        1)
+            return 0  # Docker
+            ;;
+        2)
+            return 1  # Podman
+            ;;
+        *)
+            print_warning "无效选择，默认安装 Docker"
+            return 0
+            ;;
+    esac
+}
 
 # 安装 Docker
 install_docker() {
@@ -127,17 +159,30 @@ install_docker_compose() {
 
 # 主函数
 main() {
-    install_docker
-    install_docker_compose
-    
-    echo ""
-    print_title "安装完成"
-    echo "已安装工具版本："
-    command_exists docker && echo "  Docker: $(docker --version)"
-    if command_exists docker && docker compose version &>/dev/null; then
-        echo "  Docker Compose: $(docker compose version)"
-    elif command_exists docker-compose; then
-        echo "  Docker Compose: $(docker-compose --version)"
+    # 让用户选择安装 Docker 或 Podman
+    if choose_container_runtime; then
+        # 安装 Docker
+        install_docker
+        install_docker_compose
+        
+        echo ""
+        print_title "安装完成"
+        echo "已安装工具版本："
+        command_exists docker && echo "  Docker: $(docker --version)"
+        if command_exists docker && docker compose version &>/dev/null; then
+            echo "  Docker Compose: $(docker compose version)"
+        elif command_exists docker-compose; then
+            echo "  Docker Compose: $(docker-compose --version)"
+        fi
+    else
+        # 安装 Podman
+        local podman_script="$SCRIPT_DIR/install-podman.sh"
+        if [[ -f "$podman_script" ]]; then
+            bash "$podman_script"
+        else
+            print_error "Podman 安装脚本不存在: $podman_script"
+            return 1
+        fi
     fi
 }
 
