@@ -351,6 +351,11 @@ MIT License
 
 ## 更新日志
 
+### v1.2.1
+- 🔧 优化 Node.js 安装脚本，默认安装最新版本（而非 LTS）
+- ✨ 新增 n 版本管理工具自动安装
+- 📝 支持使用 n 工具安装指定版本（n latest、n lts、n <version>）
+
 ### v1.2.0
 - ✨ 新增 Podman 安装支持（Docker 的无守护进程替代方案）
 - ✨ 支持自动配置 docker alias 指向 podman

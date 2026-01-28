@@ -27,10 +27,10 @@ install_nodejs() {
         run_command "brew install node" "安装 Node.js"
     elif [[ "$OS_TYPE" == "linux" ]]; then
         if [[ "$PACKAGE_MANAGER" == "apt" ]]; then
-            run_command "curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -" "添加 NodeSource 仓库"
+            run_command "curl -fsSL https://deb.nodesource.com/setup_latest.x | sudo -E bash -" "添加 NodeSource 仓库（最新版本）"
             run_command "sudo apt-get install -y nodejs" "安装 Node.js"
         elif [[ "$PACKAGE_MANAGER" == "yum" ]] || [[ "$PACKAGE_MANAGER" == "dnf" ]]; then
-            run_command "curl -fsSL https://rpm.nodesource.com/setup_lts.x | sudo bash -" "添加 NodeSource 仓库"
+            run_command "curl -fsSL https://rpm.nodesource.com/setup_latest.x | sudo bash -" "添加 NodeSource 仓库（最新版本）"
             run_command "sudo $PACKAGE_MANAGER install -y nodejs" "安装 Node.js"
         else
             print_error "不支持的包管理器"
@@ -60,6 +60,35 @@ check_npm() {
             print_error "npm 应该随 Node.js 一起安装，请检查 Node.js 安装"
             return 1
         fi
+    fi
+}
+
+# 安装 n (Node.js 版本管理工具)
+install_n() {
+    if command_exists n; then
+        print_info "n 已安装，跳过"
+        return 0
+    fi
+    
+    if ! command_exists npm; then
+        print_error "需要先安装 npm"
+        return 1
+    fi
+    
+    print_info "开始安装 n (Node.js 版本管理工具)..."
+    run_command "npm install -g n" "安装 n"
+    
+    if command_exists n; then
+        print_success "n 安装完成"
+        print_info "使用示例："
+        print_info "  n latest    # 安装最新版本"
+        print_info "  n lts       # 安装 LTS 版本"
+        print_info "  n 20.0.0    # 安装指定版本"
+        log_installation "n" "$(n --version 2>/dev/null || echo 'installed')"
+        return 0
+    else
+        print_warning "n 安装可能未完成，请手动运行: npm install -g n"
+        return 1
     fi
 }
 
@@ -119,6 +148,7 @@ install_pnpm() {
 main() {
     install_nodejs
     check_npm
+    install_n
     install_yarn
     install_pnpm
     
@@ -127,8 +157,19 @@ main() {
     echo "已安装工具版本："
     command_exists node && echo "  Node.js: $(node --version)"
     command_exists npm && echo "  npm: $(npm --version)"
+    if command_exists n; then
+        echo "  n: $(n --version 2>/dev/null || echo '已安装')"
+    fi
     command_exists yarn && echo "  Yarn: $(yarn --version)"
     command_exists pnpm && echo "  pnpm: $(pnpm --version)"
+    
+    if command_exists n; then
+        echo ""
+        print_info "提示：使用 n 工具可以管理 Node.js 版本"
+        print_info "  运行 'n latest' 安装最新版本"
+        print_info "  运行 'n lts' 安装 LTS 版本"
+        print_info "  运行 'n <version>' 安装指定版本（如: n 20.0.0）"
+    fi
 }
 
 main "$@"
