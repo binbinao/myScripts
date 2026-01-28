@@ -351,6 +351,13 @@ MIT License
 
 ## 更新日志
 
+### v1.2.0
+- ✨ 新增 Podman 安装支持（Docker 的无守护进程替代方案）
+- ✨ 支持自动配置 docker alias 指向 podman
+- 🔧 优化 Docker 安装脚本，支持选择 Docker 或 Podman
+- 📝 更新主菜单，添加 Podman 安装选项
+- 🔧 优化一键安装脚本，支持选择容器运行时
+
 ### v1.0.0
 - 初始版本
 - 支持开发工具安装
