@@ -139,6 +139,56 @@ check_version() {
     fi
 }
 
+# 获取当前已安装版本（用于比较），未安装返回空
+# 用法: get_current_version "node" "node --version"
+# 返回规范化版本号（去掉 v 前缀等），便于 compare_versions 比较
+normalize_version() {
+    local v="$1"
+    v="${v#v}"
+    v="${v%%[^0-9.]*}"
+    echo "$v"
+}
+
+get_current_version() {
+    local tool=$1
+    local version_cmd=${2:-"$tool --version"}
+    if ! command_exists "$tool"; then
+        echo ""
+        return 1
+    fi
+    local raw
+    raw=$($version_cmd 2>/dev/null | head -n 1)
+    [[ -z "$raw" ]] && echo "" && return 1
+    normalize_version "$raw"
+}
+
+# 比较版本号：当前是否小于最新（需要升级）
+# compare_versions current latest
+# 若 current < latest 返回 0；否则返回 1。无法比较时返回 1（不提示升级）
+compare_versions() {
+    local current="$1"
+    local latest="$2"
+    [[ -z "$current" || -z "$latest" ]] && return 1
+    current=$(normalize_version "$current")
+    latest=$(normalize_version "$latest")
+    [[ -z "$current" || -z "$latest" ]] && return 1
+    local smaller
+    smaller=$(printf '%s\n%s\n' "$current" "$latest" | sort -V 2>/dev/null | head -n 1)
+    [[ -z "$smaller" ]] && return 1
+    [[ "$smaller" == "$current" && "$current" != "$latest" ]] && return 0
+    return 1
+}
+
+# 提示发现新版本，询问是否升级；用户确认返回 0，否则返回 1
+confirm_upgrade() {
+    local tool_name="$1"
+    local current_ver="$2"
+    local latest_ver="$3"
+    echo ""
+    print_info "$tool_name 当前版本: $current_ver，最新稳定版: $latest_ver"
+    confirm "是否升级到最新版本？" "n"
+}
+
 # 执行命令并检查结果
 run_command() {
     local cmd="$1"

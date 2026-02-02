@@ -9,10 +9,31 @@ source "$SCRIPT_DIR/../lib/logger.sh"
 
 print_title "Git 及相关工具安装"
 
-# 安装 Git
+# 安装或升级 Git
 install_git() {
-    if check_version "git" "git --version"; then
-        print_info "Git 已安装，跳过"
+    if command_exists git; then
+        local current_ver
+        current_ver=$(get_current_version "git" "git --version")
+        if [[ -n "$current_ver" ]]; then
+            if confirm "是否通过包管理器升级 Git？（当前: $current_ver）" "n"; then
+                check_sudo
+                if [[ "$OS_TYPE" == "macos" ]] && command_exists brew; then
+                    run_command "brew upgrade git" "升级 Git"
+                elif [[ "$OS_TYPE" == "linux" ]]; then
+                    if [[ "$PACKAGE_MANAGER" == "apt" ]]; then
+                        run_command "sudo apt-get update" "更新包列表"
+                        run_command "sudo apt-get install -y --only-upgrade git" "升级 Git"
+                    elif [[ "$PACKAGE_MANAGER" == "yum" ]] || [[ "$PACKAGE_MANAGER" == "dnf" ]]; then
+                        run_command "sudo $PACKAGE_MANAGER upgrade -y git" "升级 Git"
+                    fi
+                fi
+            else
+                print_info "Git 已安装（$current_ver），跳过"
+            fi
+        else
+            print_info "Git 已安装，跳过"
+        fi
+        command_exists git && log_installation "Git" "$(git --version)"
         return 0
     fi
     
@@ -76,8 +97,19 @@ install_git_tools() {
         return 0
     fi
     
-    # 安装 GitHub CLI
-    if ! command_exists gh; then
+    # 安装或升级 GitHub CLI
+    if command_exists gh; then
+        if confirm "是否升级 GitHub CLI？" "n"; then
+            check_sudo
+            if [[ "$OS_TYPE" == "macos" ]] && command_exists brew; then
+                run_command "brew upgrade gh" "升级 GitHub CLI"
+            elif [[ "$OS_TYPE" == "linux" ]] && [[ "$PACKAGE_MANAGER" == "apt" ]]; then
+                run_command "sudo apt-get update" "更新包列表"
+                run_command "sudo apt-get install -y --only-upgrade gh" "升级 GitHub CLI"
+            fi
+        fi
+        log_installation "GitHub CLI" "$(gh --version | head -n 1)"
+    else
         if [[ "$OS_TYPE" == "macos" ]] && command_exists brew; then
             run_command "brew install gh" "安装 GitHub CLI"
         elif [[ "$OS_TYPE" == "linux" ]]; then
@@ -88,16 +120,27 @@ install_git_tools() {
                 run_command "sudo apt-get install -y gh" "安装 GitHub CLI"
             fi
         fi
-        if command_exists gh; then
-            local version=$(gh --version | head -n 1)
-            log_installation "GitHub CLI" "$version"
-        fi
-    else
-        print_info "GitHub CLI 已安装"
+        command_exists gh && log_installation "GitHub CLI" "$(gh --version | head -n 1)"
     fi
     
-    # 安装 Git LFS
-    if ! command_exists git-lfs; then
+    # 安装或升级 Git LFS
+    if command_exists git-lfs; then
+        if confirm "是否升级 Git LFS？" "n"; then
+            check_sudo
+            if [[ "$OS_TYPE" == "macos" ]] && command_exists brew; then
+                run_command "brew upgrade git-lfs" "升级 Git LFS"
+            elif [[ "$OS_TYPE" == "linux" ]]; then
+                if [[ "$PACKAGE_MANAGER" == "apt" ]]; then
+                    run_command "sudo apt-get update" "更新包列表"
+                    run_command "sudo apt-get install -y --only-upgrade git-lfs" "升级 Git LFS"
+                elif [[ "$PACKAGE_MANAGER" == "yum" ]] || [[ "$PACKAGE_MANAGER" == "dnf" ]]; then
+                    run_command "sudo $PACKAGE_MANAGER upgrade -y git-lfs" "升级 Git LFS"
+                fi
+            fi
+        fi
+        run_command "git lfs install" "初始化 Git LFS"
+        log_installation "Git LFS" "$(git-lfs --version)"
+    else
         if [[ "$OS_TYPE" == "macos" ]] && command_exists brew; then
             run_command "brew install git-lfs" "安装 Git LFS"
         elif [[ "$OS_TYPE" == "linux" ]]; then
@@ -111,11 +154,8 @@ install_git_tools() {
         fi
         if command_exists git-lfs; then
             run_command "git lfs install" "初始化 Git LFS"
-            local version=$(git-lfs --version)
-            log_installation "Git LFS" "$version"
+            log_installation "Git LFS" "$(git-lfs --version)"
         fi
-    else
-        print_info "Git LFS 已安装"
     fi
 }
 

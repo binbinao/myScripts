@@ -60,14 +60,34 @@ add_docker_alias() {
     fi
 }
 
-# 安装 Podman
+# 安装或升级 Podman
 install_podman() {
     if command_exists podman && podman --version &>/dev/null; then
-        local version=$(podman --version)
-        print_info "Podman 已安装: $version"
+        local current_ver
+        current_ver=$(get_current_version "podman" "podman --version")
+        if [[ -n "$current_ver" ]]; then
+            if confirm "是否通过包管理器升级 Podman？（当前: $current_ver）" "n"; then
+                check_sudo
+                if [[ "$OS_TYPE" == "macos" ]] && command_exists brew; then
+                    run_command "brew upgrade podman" "升级 Podman"
+                elif [[ "$OS_TYPE" == "linux" ]]; then
+                    if [[ "$PACKAGE_MANAGER" == "apt" ]]; then
+                        run_command "sudo apt-get update" "更新包列表"
+                        run_command "sudo apt-get install -y --only-upgrade podman 2>/dev/null || sudo apt-get install -y podman" "升级 Podman"
+                    elif [[ "$PACKAGE_MANAGER" == "yum" ]] || [[ "$PACKAGE_MANAGER" == "dnf" ]]; then
+                        run_command "sudo $PACKAGE_MANAGER upgrade -y podman" "升级 Podman"
+                    fi
+                fi
+            else
+                print_info "Podman 已安装（$current_ver），跳过"
+            fi
+        else
+            print_info "Podman 已安装，跳过"
+        fi
         if confirm "是否添加 docker alias 到 shell 配置文件？"; then
             add_docker_alias
         fi
+        command_exists podman && log_installation "Podman" "$(podman --version)"
         return 0
     fi
     

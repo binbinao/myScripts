@@ -10,14 +10,29 @@ source "$SCRIPT_DIR/../lib/logger.sh"
 
 print_title "数据库工具安装"
 
-# 安装 MySQL
+# 安装或升级 MySQL
 install_mysql() {
-    if ! confirm "是否安装 MySQL？"; then
+    if ! confirm "是否安装或升级 MySQL？"; then
         return 0
     fi
     
     if command_exists mysql; then
-        print_info "MySQL 已安装: $(mysql --version)"
+        if confirm "是否通过包管理器升级 MySQL？（当前已安装）" "n"; then
+            check_sudo
+            if [[ "$OS_TYPE" == "macos" ]] && command_exists brew; then
+                run_command "brew upgrade mysql" "升级 MySQL"
+            elif [[ "$OS_TYPE" == "linux" ]]; then
+                if [[ "$PACKAGE_MANAGER" == "apt" ]]; then
+                    run_command "sudo apt-get update" "更新包列表"
+                    run_command "sudo apt-get install -y --only-upgrade mysql-server" "升级 MySQL"
+                elif [[ "$PACKAGE_MANAGER" == "yum" ]] || [[ "$PACKAGE_MANAGER" == "dnf" ]]; then
+                    run_command "sudo $PACKAGE_MANAGER upgrade -y mysql-server" "升级 MySQL"
+                fi
+            fi
+        else
+            print_info "MySQL 已安装: $(mysql --version)"
+        fi
+        command_exists mysql && log_installation "MySQL" "$(mysql --version)"
         return 0
     fi
     
@@ -54,14 +69,29 @@ install_mysql() {
     fi
 }
 
-# 安装 PostgreSQL
+# 安装或升级 PostgreSQL
 install_postgresql() {
-    if ! confirm "是否安装 PostgreSQL？"; then
+    if ! confirm "是否安装或升级 PostgreSQL？"; then
         return 0
     fi
     
     if command_exists psql; then
-        print_info "PostgreSQL 已安装: $(psql --version)"
+        if confirm "是否通过包管理器升级 PostgreSQL？（当前已安装）" "n"; then
+            check_sudo
+            if [[ "$OS_TYPE" == "macos" ]] && command_exists brew; then
+                run_command "brew upgrade postgresql@15 2>/dev/null || brew upgrade postgresql" "升级 PostgreSQL"
+            elif [[ "$OS_TYPE" == "linux" ]]; then
+                if [[ "$PACKAGE_MANAGER" == "apt" ]]; then
+                    run_command "sudo apt-get update" "更新包列表"
+                    run_command "sudo apt-get install -y --only-upgrade postgresql postgresql-contrib" "升级 PostgreSQL"
+                elif [[ "$PACKAGE_MANAGER" == "yum" ]] || [[ "$PACKAGE_MANAGER" == "dnf" ]]; then
+                    run_command "sudo $PACKAGE_MANAGER upgrade -y postgresql-server postgresql-contrib" "升级 PostgreSQL"
+                fi
+            fi
+        else
+            print_info "PostgreSQL 已安装: $(psql --version)"
+        fi
+        command_exists psql && log_installation "PostgreSQL" "$(psql --version)"
         return 0
     fi
     
@@ -98,14 +128,29 @@ install_postgresql() {
     fi
 }
 
-# 安装 MongoDB
+# 安装或升级 MongoDB
 install_mongodb() {
-    if ! confirm "是否安装 MongoDB？"; then
+    if ! confirm "是否安装或升级 MongoDB？"; then
         return 0
     fi
     
     if command_exists mongod; then
-        print_info "MongoDB 已安装: $(mongod --version | head -n 1)"
+        if confirm "是否通过包管理器升级 MongoDB？（当前已安装）" "n"; then
+            check_sudo
+            if [[ "$OS_TYPE" == "macos" ]] && command_exists brew; then
+                run_command "brew upgrade mongodb-community" "升级 MongoDB"
+            elif [[ "$OS_TYPE" == "linux" ]]; then
+                if [[ "$PACKAGE_MANAGER" == "apt" ]]; then
+                    run_command "sudo apt-get update" "更新包列表"
+                    run_command "sudo apt-get install -y --only-upgrade mongodb-org" "升级 MongoDB"
+                elif [[ "$PACKAGE_MANAGER" == "yum" ]] || [[ "$PACKAGE_MANAGER" == "dnf" ]]; then
+                    run_command "sudo $PACKAGE_MANAGER upgrade -y mongodb-org" "升级 MongoDB"
+                fi
+            fi
+        else
+            print_info "MongoDB 已安装: $(mongod --version | head -n 1)"
+        fi
+        command_exists mongod && log_installation "MongoDB" "$(mongod --version | head -n 1)"
         return 0
     fi
     
@@ -144,14 +189,29 @@ install_mongodb() {
     fi
 }
 
-# 安装 Redis
+# 安装或升级 Redis
 install_redis() {
-    if ! confirm "是否安装 Redis？"; then
+    if ! confirm "是否安装或升级 Redis？"; then
         return 0
     fi
     
     if command_exists redis-server; then
-        print_info "Redis 已安装: $(redis-server --version | head -n 1)"
+        if confirm "是否通过包管理器升级 Redis？（当前已安装）" "n"; then
+            check_sudo
+            if [[ "$OS_TYPE" == "macos" ]] && command_exists brew; then
+                run_command "brew upgrade redis" "升级 Redis"
+            elif [[ "$OS_TYPE" == "linux" ]]; then
+                if [[ "$PACKAGE_MANAGER" == "apt" ]]; then
+                    run_command "sudo apt-get update" "更新包列表"
+                    run_command "sudo apt-get install -y --only-upgrade redis-server" "升级 Redis"
+                elif [[ "$PACKAGE_MANAGER" == "yum" ]] || [[ "$PACKAGE_MANAGER" == "dnf" ]]; then
+                    run_command "sudo $PACKAGE_MANAGER upgrade -y redis" "升级 Redis"
+                fi
+            fi
+        else
+            print_info "Redis 已安装: $(redis-server --version | head -n 1)"
+        fi
+        command_exists redis-server && log_installation "Redis" "$(redis-server --version | head -n 1)"
         return 0
     fi
     

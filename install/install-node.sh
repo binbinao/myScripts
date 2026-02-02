@@ -10,10 +10,41 @@ source "$SCRIPT_DIR/../lib/logger.sh"
 
 print_title "Node.js 及相关工具安装"
 
-# 安装 Node.js
+# 获取 Node.js 最新稳定版版本号（规范化，无 v 前缀）
+get_latest_node_version() {
+    local raw
+    raw=$(curl -sL https://nodejs.org/dist/index.json 2>/dev/null | grep -oE '"version":"v[0-9]+\.[0-9]+\.[0-9]+"' | head -1 | cut -d'"' -f4)
+    [[ -z "$raw" ]] && echo "" && return 1
+    normalize_version "$raw"
+}
+
+# 安装或升级 Node.js
 install_nodejs() {
-    if check_version "node" "node --version"; then
-        print_info "Node.js 已安装，跳过"
+    if command_exists node; then
+        local current_ver
+        current_ver=$(get_current_version "node" "node --version")
+        local latest_ver
+        latest_ver=$(get_latest_node_version)
+        if [[ -n "$latest_ver" ]] && compare_versions "$current_ver" "$latest_ver"; then
+            if confirm_upgrade "Node.js" "$(node --version 2>/dev/null)" "v$latest_ver"; then
+                if [[ "$OS_TYPE" == "macos" ]] && command_exists brew; then
+                    run_command "brew upgrade node" "升级 Node.js"
+                elif [[ "$OS_TYPE" == "linux" ]]; then
+                    if [[ "$PACKAGE_MANAGER" == "apt" ]]; then
+                        run_command "curl -fsSL https://deb.nodesource.com/setup_latest.x | sudo -E bash -" "更新 NodeSource 仓库"
+                        run_command "sudo apt-get install -y --only-upgrade nodejs" "升级 Node.js"
+                    elif [[ "$PACKAGE_MANAGER" == "yum" ]] || [[ "$PACKAGE_MANAGER" == "dnf" ]]; then
+                        run_command "curl -fsSL https://rpm.nodesource.com/setup_latest.x | sudo bash -" "更新 NodeSource 仓库"
+                        run_command "sudo $PACKAGE_MANAGER upgrade -y nodejs" "升级 Node.js"
+                    fi
+                fi
+            fi
+        elif [[ -n "$current_ver" ]]; then
+            print_info "Node.js 已是最新（$current_ver），跳过"
+        else
+            print_info "Node.js 已安装，跳过"
+        fi
+        command_exists node && log_installation "Node.js" "$(node --version)"
         return 0
     fi
     
@@ -47,12 +78,9 @@ install_nodejs() {
     fi
 }
 
-# 安装 npm（通常随 Node.js 一起安装）
+# 安装或升级 npm（通常随 Node.js 一起安装）
 check_npm() {
-    if check_version "npm" "npm --version"; then
-        print_info "npm 已安装"
-        return 0
-    else
+    if ! command_exists npm; then
         print_warning "npm 未安装，尝试安装..."
         if [[ "$OS_TYPE" == "macos" ]]; then
             run_command "brew install npm" "安装 npm"
@@ -60,7 +88,23 @@ check_npm() {
             print_error "npm 应该随 Node.js 一起安装，请检查 Node.js 安装"
             return 1
         fi
+        return 0
     fi
+    local current_ver
+    current_ver=$(get_current_version "npm" "npm --version")
+    local latest_ver
+    latest_ver=$(npm view npm version 2>/dev/null)
+    latest_ver=$(normalize_version "$latest_ver")
+    if [[ -n "$latest_ver" ]] && compare_versions "$current_ver" "$latest_ver"; then
+        if confirm_upgrade "npm" "$(npm --version 2>/dev/null)" "$latest_ver"; then
+            run_command "npm install -g npm@latest" "升级 npm"
+        fi
+    elif [[ -n "$current_ver" ]]; then
+        print_info "npm 已是最新（$current_ver），跳过"
+    else
+        print_info "npm 已安装"
+    fi
+    return 0
 }
 
 # 安装 n (Node.js 版本管理工具)
@@ -92,56 +136,68 @@ install_n() {
     fi
 }
 
-# 安装 yarn
+# 安装或升级 yarn
 install_yarn() {
-    if check_version "yarn" "yarn --version"; then
+    if ! command_exists yarn; then
+        print_info "开始安装 Yarn..."
+        if command_exists npm; then
+            run_command "npm install -g yarn" "通过 npm 安装 Yarn"
+        else
+            print_error "需要先安装 npm"
+            return 1
+        fi
+        command_exists yarn && log_installation "Yarn" "$(yarn --version)"
+        return 0
+    fi
+    local current_ver
+    current_ver=$(get_current_version "yarn" "yarn --version")
+    local latest_ver
+    latest_ver=$(npm view yarn version 2>/dev/null)
+    latest_ver=$(normalize_version "$latest_ver")
+    if [[ -n "$latest_ver" ]] && compare_versions "$current_ver" "$latest_ver"; then
+        if confirm_upgrade "Yarn" "$(yarn --version 2>/dev/null)" "$latest_ver"; then
+            run_command "npm install -g yarn@latest" "升级 Yarn"
+        fi
+    elif [[ -n "$current_ver" ]]; then
+        print_info "Yarn 已是最新（$current_ver），跳过"
+    else
         print_info "Yarn 已安装，跳过"
-        return 0
     fi
-    
-    print_info "开始安装 Yarn..."
-    
-    if command_exists npm; then
-        run_command "npm install -g yarn" "通过 npm 安装 Yarn"
-    else
-        print_error "需要先安装 npm"
-        return 1
-    fi
-    
-    if check_version "yarn"; then
-        local version=$(yarn --version)
-        log_installation "Yarn" "$version"
-        return 0
-    else
-        return 1
-    fi
+    command_exists yarn && log_installation "Yarn" "$(yarn --version)"
+    return 0
 }
 
-# 安装 pnpm
+# 安装或升级 pnpm
 install_pnpm() {
-    if check_version "pnpm" "pnpm --version"; then
+    if ! command_exists pnpm; then
+        print_info "开始安装 pnpm..."
+        if command_exists npm; then
+            run_command "npm install -g pnpm" "通过 npm 安装 pnpm"
+        elif command_exists curl; then
+            run_command "curl -fsSL https://get.pnpm.io/install.sh | sh -" "通过官方脚本安装 pnpm"
+        else
+            print_error "需要 npm 或 curl"
+            return 1
+        fi
+        command_exists pnpm && log_installation "pnpm" "$(pnpm --version)"
+        return 0
+    fi
+    local current_ver
+    current_ver=$(get_current_version "pnpm" "pnpm --version")
+    local latest_ver
+    latest_ver=$(npm view pnpm version 2>/dev/null)
+    latest_ver=$(normalize_version "$latest_ver")
+    if [[ -n "$latest_ver" ]] && compare_versions "$current_ver" "$latest_ver"; then
+        if confirm_upgrade "pnpm" "$(pnpm --version 2>/dev/null)" "$latest_ver"; then
+            run_command "npm install -g pnpm@latest" "升级 pnpm"
+        fi
+    elif [[ -n "$current_ver" ]]; then
+        print_info "pnpm 已是最新（$current_ver），跳过"
+    else
         print_info "pnpm 已安装，跳过"
-        return 0
     fi
-    
-    print_info "开始安装 pnpm..."
-    
-    if command_exists npm; then
-        run_command "npm install -g pnpm" "通过 npm 安装 pnpm"
-    elif command_exists curl; then
-        run_command "curl -fsSL https://get.pnpm.io/install.sh | sh -" "通过官方脚本安装 pnpm"
-    else
-        print_error "需要 npm 或 curl"
-        return 1
-    fi
-    
-    if check_version "pnpm"; then
-        local version=$(pnpm --version)
-        log_installation "pnpm" "$version"
-        return 0
-    else
-        return 1
-    fi
+    command_exists pnpm && log_installation "pnpm" "$(pnpm --version)"
+    return 0
 }
 
 # 主函数

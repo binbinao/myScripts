@@ -41,10 +41,31 @@ choose_container_runtime() {
     esac
 }
 
-# 安装 Docker
+# 安装或升级 Docker
 install_docker() {
-    if check_version "docker" "docker --version"; then
-        print_info "Docker 已安装，跳过"
+    if command_exists docker; then
+        local current_ver
+        current_ver=$(get_current_version "docker" "docker --version")
+        if [[ -n "$current_ver" ]]; then
+            if confirm "是否通过包管理器升级 Docker？（当前已安装）" "n"; then
+                check_sudo
+                if [[ "$OS_TYPE" == "macos" ]] && command_exists brew; then
+                    run_command "brew upgrade --cask docker 2>/dev/null || brew upgrade docker" "升级 Docker"
+                elif [[ "$OS_TYPE" == "linux" ]]; then
+                    if [[ "$PACKAGE_MANAGER" == "apt" ]]; then
+                        run_command "sudo apt-get update" "更新包列表"
+                        run_command "sudo apt-get install -y --only-upgrade docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin 2>/dev/null || true" "升级 Docker"
+                    elif [[ "$PACKAGE_MANAGER" == "yum" ]] || [[ "$PACKAGE_MANAGER" == "dnf" ]]; then
+                        run_command "sudo $PACKAGE_MANAGER upgrade -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin 2>/dev/null || true" "升级 Docker"
+                    fi
+                fi
+            else
+                print_info "Docker 已安装，跳过"
+            fi
+        else
+            print_info "Docker 已安装，跳过"
+        fi
+        command_exists docker && log_installation "Docker" "$(docker --version)"
         return 0
     fi
     
@@ -122,18 +143,16 @@ install_docker() {
     fi
 }
 
-# 安装 Docker Compose
+# 安装或检查 Docker Compose
 install_docker_compose() {
-    if check_version "docker-compose" "docker-compose --version"; then
-        print_info "Docker Compose 已安装，跳过"
-        return 0
-    fi
-    
-    # Docker Compose V2 已集成到 Docker 中
     if command_exists docker && docker compose version &>/dev/null; then
         print_info "Docker Compose V2 已可用（作为 Docker 插件）"
-        local version=$(docker compose version)
-        log_installation "Docker Compose" "$version"
+        log_installation "Docker Compose" "$(docker compose version 2>/dev/null)"
+        return 0
+    fi
+    if command_exists docker-compose; then
+        print_info "Docker Compose 已安装，跳过"
+        log_installation "Docker Compose" "$(docker-compose --version 2>/dev/null)"
         return 0
     fi
     

@@ -10,10 +10,31 @@ source "$SCRIPT_DIR/../lib/logger.sh"
 
 print_title "Python 及相关工具安装"
 
-# 安装 Python
+# 安装或升级 Python
 install_python() {
-    if check_version "python3" "python3 --version"; then
-        print_info "Python3 已安装，跳过"
+    if command_exists python3; then
+        local current_ver
+        current_ver=$(get_current_version "python3" "python3 --version 2>&1")
+        if [[ -n "$current_ver" ]]; then
+            if confirm "是否通过包管理器升级 Python3？（当前: $current_ver）" "n"; then
+                check_sudo
+                if [[ "$OS_TYPE" == "macos" ]] && command_exists brew; then
+                    run_command "brew upgrade python@3.11 2>/dev/null || brew upgrade python3" "升级 Python3"
+                elif [[ "$OS_TYPE" == "linux" ]]; then
+                    if [[ "$PACKAGE_MANAGER" == "apt" ]]; then
+                        run_command "sudo apt-get update" "更新包列表"
+                        run_command "sudo apt-get install -y --only-upgrade python3 python3-pip python3-venv 2>/dev/null || true" "升级 Python3"
+                    elif [[ "$PACKAGE_MANAGER" == "yum" ]] || [[ "$PACKAGE_MANAGER" == "dnf" ]]; then
+                        run_command "sudo $PACKAGE_MANAGER upgrade -y python3 python3-pip" "升级 Python3"
+                    fi
+                fi
+            else
+                print_info "Python3 已安装（$current_ver），跳过"
+            fi
+        else
+            print_info "Python3 已安装，跳过"
+        fi
+        command_exists python3 && log_installation "Python3" "$(python3 --version 2>&1)"
         return 0
     fi
     
@@ -46,14 +67,9 @@ install_python() {
     fi
 }
 
-# 检查并升级 pip
+# 检查并安装或升级 pip
 check_pip() {
-    if check_version "pip3" "pip3 --version"; then
-        print_info "pip3 已安装"
-        print_info "升级 pip 到最新版本..."
-        run_command "python3 -m pip install --upgrade pip" "升级 pip"
-        return 0
-    else
+    if ! command_exists pip3 && ! python3 -m pip --version &>/dev/null; then
         print_warning "pip3 未安装，尝试安装..."
         if command_exists python3; then
             run_command "python3 -m ensurepip --upgrade" "安装 pip"
@@ -61,13 +77,57 @@ check_pip() {
             print_error "需要先安装 Python3"
             return 1
         fi
+        return 0
     fi
+    local current_ver
+    current_ver=$(get_current_version "pip3" "pip3 --version 2>/dev/null")
+    [[ -z "$current_ver" ]] && current_ver=$(python3 -m pip --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+    local latest_ver
+    latest_ver=$(curl -sL https://pypi.org/pypi/pip/json 2>/dev/null | grep -oE '"version":"[0-9]+\.[0-9]+\.[0-9]+"' | head -1 | cut -d'"' -f4)
+    latest_ver=$(normalize_version "$latest_ver")
+    if [[ -n "$latest_ver" ]] && [[ -n "$current_ver" ]] && compare_versions "$current_ver" "$latest_ver"; then
+        if confirm_upgrade "pip" "$current_ver" "$latest_ver"; then
+            run_command "python3 -m pip install --upgrade pip" "升级 pip"
+        fi
+    elif [[ -n "$current_ver" ]]; then
+        print_info "pip3 已是最新（$current_ver），跳过"
+    else
+        print_info "pip3 已安装"
+    fi
+    return 0
 }
 
-# 安装 uv
+# 获取 uv 最新版本号
+get_latest_uv_version() {
+    local raw
+    raw=$(curl -sL https://api.github.com/repos/astral-sh/uv/releases/latest 2>/dev/null | grep -oE '"tag_name":"v[0-9]+\.[0-9]+\.[0-9]+"' | head -1 | cut -d'"' -f4)
+    [[ -z "$raw" ]] && echo "" && return 1
+    normalize_version "$raw"
+}
+
+# 安装或升级 uv
 install_uv() {
-    if check_version "uv" "uv --version"; then
-        print_info "uv 已安装，跳过"
+    local uv_cmd="uv"
+    command_exists uv || [[ -f "$HOME/.cargo/bin/uv" ]] && uv_cmd="$HOME/.cargo/bin/uv" || true
+    if command_exists uv || [[ -f "$HOME/.cargo/bin/uv" ]]; then
+        "$uv_cmd" --version &>/dev/null || true
+        local current_ver
+        current_ver=$("$uv_cmd" --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+        current_ver=$(normalize_version "$current_ver")
+        local latest_ver
+        latest_ver=$(get_latest_uv_version)
+        if [[ -n "$latest_ver" ]] && compare_versions "$current_ver" "$latest_ver"; then
+            if confirm_upgrade "uv" "$current_ver" "$latest_ver"; then
+                run_command "curl -LsSf https://astral.sh/uv/install.sh | sh" "升级 uv"
+                export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+            fi
+        elif [[ -n "$current_ver" ]]; then
+            print_info "uv 已是最新（$current_ver），跳过"
+        else
+            print_info "uv 已安装，跳过"
+        fi
+        command_exists uv || uv_cmd="$HOME/.cargo/bin/uv"
+        $uv_cmd --version &>/dev/null && log_installation "uv" "$($uv_cmd --version 2>/dev/null | head -n 1)"
         return 0
     fi
     
@@ -121,10 +181,21 @@ install_uv() {
     fi
 }
 
-# 安装 conda (Miniconda)
+# 安装或升级 conda (Miniconda)
 install_conda() {
-    if check_version "conda" "conda --version"; then
-        print_info "Conda 已安装，跳过"
+    if command_exists conda; then
+        local current_ver
+        current_ver=$(get_current_version "conda" "conda --version 2>&1")
+        if [[ -n "$current_ver" ]]; then
+            if confirm "是否升级 Conda？（当前: $current_ver）" "n"; then
+                run_command "conda update -n base conda -y" "升级 Conda"
+            else
+                print_info "Conda 已安装（$current_ver），跳过"
+            fi
+        else
+            print_info "Conda 已安装，跳过"
+        fi
+        command_exists conda && log_installation "Conda" "$(conda --version)"
         return 0
     fi
     
