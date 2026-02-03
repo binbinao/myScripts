@@ -86,8 +86,15 @@ myScripts/
 │   ├── check-services.sh      # 服务状态检查
 │   ├── check-dependencies.sh  # 依赖冲突排查
 │   └── check-performance.sh    # 性能分析
-└── examples/                  # 使用示例
-    └── usage-examples.md      # 常见场景说明
+├── examples/                  # 使用示例
+│   └── usage-examples.md      # 常见场景说明
+├── crawler/                   # 数据爬取工具
+│   ├── nuscenes_lidarseg_crawler.py  # nuScenes LiDAR分割数据爬取
+│   ├── requirements.txt       # Python依赖
+│   └── README.md              # 使用说明
+└── etc/                       # 杂项脚本
+    ├── fix-lsd-icons.sh       # LSD图标修复脚本
+    └── lsd-icons-fix.md       # 修复说明文档
 ```
 
 ## 安装脚本说明
@@ -277,6 +284,35 @@ myScripts/
 ```bash
 ./troubleshoot/check-performance.sh
 ```
+
+## 数据爬取工具
+
+### nuScenes LiDAR 分割数据爬取
+
+用于爬取 nuScenes 数据集的 LiDAR 分割数据：
+
+```bash
+# 安装依赖
+cd crawler
+pip install -r requirements.txt
+
+# 运行爬取脚本
+python nuscenes_lidarseg_crawler.py
+```
+
+详细用法参考 `crawler/README.md`。
+
+## 杂项脚本
+
+### LSD 图标修复
+
+修复 LSD (LSD: Dream Emulator) 游戏图标问题：
+
+```bash
+./etc/fix-lsd-icons.sh
+```
+
+详细说明参考 `etc/lsd-icons-fix.md`。
 
 ## 配置文件
 
