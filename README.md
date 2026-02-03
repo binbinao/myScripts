@@ -4,7 +4,7 @@
 
 ## 功能特性
 
-- 🚀 **开发工具安装**: 一键安装 Node.js、Python、Docker、Git、数据库、VSCode 等开发工具
+- 🚀 **开发工具安装**: 一键安装 Node.js、Python、Docker、Git、数据库、VSCode、Chrome 等开发工具
 - 🧹 **系统清理**: 安全清理系统缓存、包管理器缓存、Docker 资源、临时文件等
 - 🔍 **问题排查**: 网络、磁盘、进程、权限、服务、依赖、性能等全方位排查
 - 🛡️ **安全保护**: 白名单保护、大文件确认、操作日志记录
@@ -31,6 +31,7 @@ bash /path/to/myScripts/main.sh
 ./main.sh install-python
 ./main.sh install-docker
 ./main.sh install-vscode
+./main.sh install-chrome
 
 # 清理操作
 ./main.sh cleanup-system
@@ -69,6 +70,7 @@ myScripts/
 │   ├── install-git.sh        # Git 安装
 │   ├── install-db.sh         # 数据库安装
 │   ├── install-vscode.sh     # VSCode 安装
+│   ├── install-chrome.sh     # Chrome 浏览器安装
 │   └── install-all.sh        # 一键安装所有
 ├── cleanup/                   # 清理脚本
 │   ├── cleanup-system.sh     # 系统缓存清理
@@ -155,6 +157,19 @@ myScripts/
 - 自动检测已安装版本并提示升级
 - 支持 macOS (Homebrew/手动安装) 和 Linux (apt/yum/dnf)
 - 可选安装常用扩展（Python、ESLint、Prettier、GitLens 等）
+
+### Chrome 浏览器
+
+安装或升级到最新稳定版 Google Chrome：
+
+```bash
+./install/install-chrome.sh
+```
+
+**特性**：
+- 自动检测已安装版本并提示升级
+- 支持 macOS (Homebrew/手动下载) 和 Linux (apt/yum/dnf)
+- 自动配置官方软件源，支持后续系统更新
 
 ### 一键安装所有工具
 
@@ -404,9 +419,10 @@ MIT License
 
 ### v1.2.4
 - ✨ 新增 VSCode 一键安装脚本，支持安装和升级到最新稳定版
+- ✨ 新增 Chrome 浏览器一键安装脚本，支持安装和升级
 - ✨ 支持 macOS (Homebrew/手动下载) 和 Linux (apt/yum/dnf) 多平台安装
 - ✨ 可选安装常用扩展（Python、ESLint、Prettier、GitLens 等）
-- 📝 更新主菜单，添加 VSCode 安装选项
+- 📝 更新主菜单，添加 VSCode 和 Chrome 安装选项
 - 📝 更新 README，补充 crawler/ 和 etc/ 目录说明
 
 ### v1.2.1
