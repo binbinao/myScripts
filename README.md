@@ -42,6 +42,11 @@ bash /path/to/myScripts/main.sh
 ./main.sh check-network
 ./main.sh check-disk
 ./main.sh check-process
+
+# 杂项工具
+./main.sh fix-node           # 修复 Node.js/npm
+./main.sh reinstall-npm-packages  # 重装全局 npm 包
+./main.sh upgrade-ollama     # 升级 Ollama
 ```
 
 ### 查看帮助
@@ -96,7 +101,10 @@ myScripts/
 │   ├── nuscenes_lidarseg_crawler.py  # nuScenes LiDAR分割数据爬取
 │   ├── requirements.txt       # Python依赖
 │   └── README.md              # 使用说明
-└── etc/                       # 杂项脚本
+└── etc/                       # 杂项工具脚本
+    ├── fix-node-npm.sh        # Node.js/npm 修复脚本
+    ├── reinstall-global-npm-packages.sh  # 重装全局 npm 包
+    ├── upgrade-ollama.sh      # Ollama 升级脚本
     ├── fix-lsd-icons.sh       # LSD图标修复脚本
     └── lsd-icons-fix.md       # 修复说明文档
 ```
@@ -332,7 +340,43 @@ python nuscenes_lidarseg_crawler.py
 
 详细用法参考 `crawler/README.md`。
 
-## 杂项脚本
+## 杂项工具脚本
+
+### 修复 Node.js/npm
+
+当 node 或 npm 命令找不到或损坏时，自动检测并修复：
+
+```bash
+./etc/fix-node-npm.sh           # 自动检测并修复
+./etc/fix-node-npm.sh --path    # 仅修复 PATH，不安装
+./etc/fix-node-npm.sh --force   # 强制重新安装 Node.js
+```
+
+**特性**：
+- 自动检测 nvm、fnm、volta、Homebrew、系统路径中的 Node.js
+- 支持修复 PATH 配置或强制重装
+- 支持 macOS 和 Linux
+
+### 重装全局 npm 包
+
+批量重装常用全局 npm 包：
+
+```bash
+./etc/reinstall-global-npm-packages.sh
+```
+
+### 升级 Ollama
+
+检查并升级 Ollama 到最新版本：
+
+```bash
+./etc/upgrade-ollama.sh
+```
+
+**特性**：
+- 自动检测当前版本并与 GitHub 最新版本比较
+- 升级前自动备份当前版本
+- 支持 macOS 和 Linux（amd64/arm64）
 
 ### LSD 图标修复
 

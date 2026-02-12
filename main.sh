@@ -56,8 +56,11 @@ show_main_menu() {
     echo ""
 
     echo -e "${MAGENTA}=== 其他功能 ===${NC}"
-    echo " 26) 查看操作日志"
-    echo " 27) 查看使用示例"
+    echo " 26) 修复 Node.js/npm"
+    echo " 27) 重装全局 npm 包"
+    echo " 28) 升级 Ollama"
+    echo " 29) 查看操作日志"
+    echo " 30) 查看使用示例"
     echo "  0) 退出"
     echo ""
 }
@@ -125,7 +128,7 @@ view_examples() {
 main_loop() {
     while true; do
         show_main_menu
-        read -p "$(echo -e ${CYAN}请选择操作 [0-27]: ${NC})" choice
+        read -p "$(echo -e ${CYAN}请选择操作 [0-30]: ${NC})" choice
         
         case $choice in
             1)
@@ -229,9 +232,21 @@ main_loop() {
                 press_any_key
                 ;;
             26)
-                view_logs
+                bash "$SCRIPT_DIR/etc/fix-node-npm.sh"
+                press_any_key
                 ;;
             27)
+                bash "$SCRIPT_DIR/etc/reinstall-global-npm-packages.sh"
+                press_any_key
+                ;;
+            28)
+                bash "$SCRIPT_DIR/etc/upgrade-ollama.sh"
+                press_any_key
+                ;;
+            29)
+                view_logs
+                ;;
+            30)
                 view_examples
                 ;;
             0)
@@ -318,6 +333,15 @@ if [[ $# -gt 0 ]]; then
         check-performance|performance)
             run_troubleshoot_script "check-performance.sh"
             ;;
+        fix-node|fix-npm)
+            bash "$SCRIPT_DIR/etc/fix-node-npm.sh" "${@:2}"
+            ;;
+        reinstall-npm-packages|npm-packages)
+            bash "$SCRIPT_DIR/etc/reinstall-global-npm-packages.sh"
+            ;;
+        upgrade-ollama|ollama)
+            bash "$SCRIPT_DIR/etc/upgrade-ollama.sh"
+            ;;
         log|logs)
             view_logs
             ;;
@@ -328,6 +352,7 @@ if [[ $# -gt 0 ]]; then
             echo "  安装: install-node, install-python, install-docker, install-podman, install-git, install-db"
             echo "  清理: cleanup-system, cleanup-packages, cleanup-docker, cleanup-git, cleanup-temp, cleanup-logs, cleanup-node, cleanup-python"
             echo "  排查: check-network, check-disk, check-process, check-permission, check-services, check-dependencies, check-performance"
+            echo "  工具: fix-node, reinstall-npm-packages, upgrade-ollama"
             echo "  其他: log, help"
             echo ""
             echo "不带参数运行将显示交互式菜单"
