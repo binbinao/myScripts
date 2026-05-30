@@ -10,6 +10,14 @@ source "$SCRIPT_DIR/../lib/logger.sh"
 
 print_title "node_modules 清理"
 
+# 加载路径配置
+load_paths_config() {
+    local config_file="$SCRIPT_DIR/../config/paths.conf"
+    if [[ -f "$config_file" ]]; then
+        source "$config_file"
+    fi
+}
+
 # 查找所有 node_modules 目录
 find_node_modules() {
     local search_dir="${1:-$HOME}"
@@ -24,10 +32,13 @@ find_node_modules() {
 
 # 清理 node_modules
 cleanup_node_modules() {
+    load_paths_config
+
     print_info "查找 node_modules 目录..."
     
     local search_dir="${1:-$HOME}"
-    local node_modules_dirs=$(find_node_modules "$search_dir")
+    local depth="${NODE_MODULES_DEPTH:--1}"
+    local node_modules_dirs=$(find_node_modules "$search_dir" "$depth")
     
     if [[ -z "$node_modules_dirs" ]]; then
         print_info "未找到 node_modules 目录"
@@ -100,6 +111,8 @@ cleanup_node_modules() {
 
 # 按项目清理（交互式选择）
 cleanup_by_project() {
+    load_paths_config
+
     print_info "按项目清理 node_modules..."
     
     local search_dir="${1:-$HOME}"

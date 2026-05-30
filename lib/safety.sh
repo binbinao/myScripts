@@ -56,20 +56,23 @@ load_whitelist() {
 # 检查路径是否在白名单中
 is_whitelisted() {
     local target_path="$1"
-    local whitelist
-    readarray -t whitelist < <(load_whitelist)
-    
+    local whitelist_path
+    local normalized_target
+    local normalized_whitelist
+
     # 规范化路径
-    target_path=$(realpath "$target_path" 2>/dev/null || echo "$target_path")
-    
-    for whitelist_path in "${whitelist[@]}"; do
-        whitelist_path=$(realpath "$whitelist_path" 2>/dev/null || echo "$whitelist_path")
-        
-        # 检查目标路径是否在白名单路径下
-        if [[ "$target_path" == "$whitelist_path"* ]] || [[ "$target_path" == "$whitelist_path" ]]; then
+    normalized_target=$(realpath "$target_path" 2>/dev/null || echo "$target_path")
+
+    while IFS= read -r whitelist_path; do
+        [[ -z "$whitelist_path" ]] && continue
+
+        normalized_whitelist=$(realpath "$whitelist_path" 2>/dev/null || echo "$whitelist_path")
+
+        # 仅在完全匹配或位于白名单目录内部时视为受保护
+        if [[ "$normalized_target" == "$normalized_whitelist" ]] || [[ "$normalized_target" == "$normalized_whitelist/"* ]]; then
             return 0
         fi
-    done
+    done < <(load_whitelist)
     
     return 1
 }

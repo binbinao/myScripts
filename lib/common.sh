@@ -234,6 +234,34 @@ get_dir_size() {
     fi
 }
 
+# 获取路径大小（字节）
+get_path_size_bytes() {
+    local path="$1"
+
+    if [[ ! -e "$path" ]]; then
+        echo "0"
+        return 0
+    fi
+
+    if [[ -f "$path" ]]; then
+        if [[ "$OS_TYPE" == "macos" ]]; then
+            stat -f%z "$path" 2>/dev/null || echo "0"
+        else
+            stat -c%s "$path" 2>/dev/null || echo "0"
+        fi
+        return 0
+    fi
+
+    local size_kb
+    size_kb=$(du -sk "$path" 2>/dev/null | cut -f1)
+
+    if [[ -n "$size_kb" ]]; then
+        echo $((size_kb * 1024))
+    else
+        echo "0"
+    fi
+}
+
 # 格式化字节数
 format_bytes() {
     local bytes=$1

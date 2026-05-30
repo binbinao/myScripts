@@ -105,8 +105,12 @@ cleanup_uv_cache() {
     
     if confirm "是否清理 uv 缓存？"; then
         if [[ -d "$cache_dir" ]]; then
-            run_command "rm -rf $cache_dir" "清理 uv 缓存"
-            log_cleanup "packages" "uv 缓存"
+            if rm -rf -- "$cache_dir"; then
+                print_success "清理 uv 缓存 完成"
+                log_cleanup "packages" "uv 缓存"
+            else
+                print_error "清理 uv 缓存 失败"
+            fi
         else
             print_info "uv 缓存目录不存在，无需清理"
         fi

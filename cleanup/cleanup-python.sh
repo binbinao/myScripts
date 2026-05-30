@@ -28,6 +28,10 @@ find_python_cache() {
         "*.pyd"
         ".Python"
     )
+
+    if [[ ${#PYTHON_CACHE_PATTERNS[@]} -gt 0 ]]; then
+        patterns=("${PYTHON_CACHE_PATTERNS[@]}")
+    fi
     
     local cache_files=()
     
@@ -74,11 +78,8 @@ cleanup_python_cache() {
     while IFS= read -r item; do
         if [[ -n "$item" ]]; then
             items_array+=("$item")
-            if [[ -d "$item" ]]; then
-                local size_bytes=$(du -sb "$item" 2>/dev/null | cut -f1)
-            else
-                local size_bytes=$(get_file_size_bytes "$item")
-            fi
+            local size_bytes
+            size_bytes=$(get_path_size_bytes "$item")
             total_size=$((total_size + size_bytes))
             item_count=$((item_count + 1))
         fi
@@ -143,23 +144,47 @@ cleanup_python_cache() {
 
 # 使用 Python 工具清理
 cleanup_with_python() {
-    if command_exists python3; then
-        print_info "使用 Python 工具清理缓存..."
-        
-        # 清理 __pycache__
-        run_command "python3 -Bc 'import pathlib; [p.unlink() for p in pathlib.Path(\"$HOME\").rglob(\"*.py[co]\")]'" "清理 .pyc 文件" || true
-        run_command "python3 -Bc 'import pathlib; [p.rmdir() for p in pathlib.Path(\"$HOME\").rglob(\"__pycache__\")]'" "清理 __pycache__ 目录" || true
-        
-        log_cleanup "python" "使用 Python 工具清理"
-    else
+    local search_dir="${1:-$HOME}"
+
+    if ! command_exists python3; then
         print_info "Python3 未安装，跳过"
+        return 0
+    fi
+
+    print_info "清理遗留的空 __pycache__ 目录..."
+
+    if python3 - "$search_dir" <<'PY'
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1]).expanduser()
+removed = 0
+
+for path in root.rglob("__pycache__"):
+    if path.is_dir():
+        try:
+            next(path.iterdir())
+        except StopIteration:
+            path.rmdir()
+            removed += 1
+        except OSError:
+            pass
+
+print(removed)
+PY
+    then
+        log_cleanup "python" "清理空 __pycache__ 目录: $search_dir"
+    else
+        print_warning "清理空 __pycache__ 目录时出现问题"
     fi
 }
 
 # 主函数
 main() {
-    cleanup_python_cache
-    cleanup_with_python
+    local search_dir="${1:-$HOME}"
+
+    cleanup_python_cache "$search_dir"
+    cleanup_with_python "$search_dir"
     
     echo ""
     print_title "Python 缓存清理完成"
